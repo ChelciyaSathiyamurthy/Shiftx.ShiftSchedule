@@ -9,7 +9,7 @@ public class MainApp {
 		try {
 			service.processShiftPattern(input);
 		} catch (ShiftServiceException e) {
-			// TODO Auto-generated catch block
+		
 			e.printStackTrace();
 		}
 	}
