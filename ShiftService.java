@@ -41,7 +41,7 @@ public class ShiftService {
 		return "Regular Type";
 	}
 
-	public boolean isValidShift(Map<Integer, DayInfoVO> daysMap) {
+	public boolean isValidShift(Map<Integer, DayInfoVO> daysMap)throws NullPointerException {
 		int currentDay = 1;
 		int lastDay = 7;
 		boolean isValid = true;
@@ -55,6 +55,9 @@ public class ShiftService {
 				break;
 			}
 			DayInfoVO nextDayInfo = daysMap.get(nextDay);
+			if (currentDayInfo==null || nextDayInfo==null) {
+				throw new NullPointerException("Input cannot be null.");
+			}
 			Duration duration = Duration.between(currentDayInfo.getEndTimeInstant(), nextDayInfo.getStartTimeInstant());
 			if (duration.isNegative()) {
 				duration = duration.plusHours(24);
