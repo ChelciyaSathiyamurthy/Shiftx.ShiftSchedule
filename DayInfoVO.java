@@ -17,6 +17,15 @@ public class DayInfoVO {
 	Boolean isValidShift;
 	String shiftType;
 
+	public DayInfoVO(Instant startTime2, Instant endTime2) {
+		this.startTimeInstant = startTime2;
+		this.endTimeInstant = endTime2;
+	}
+
+	public DayInfoVO() {
+
+	}
+
 	public String getStartTime() {
 		return startTime;
 	}

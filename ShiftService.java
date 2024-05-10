@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +27,15 @@ public class ShiftService {
 
 	}
 
-	public String findShiftType(Map<Integer, DayInfoVO> daysMap) {
+	public String findShiftType(Map<Integer, DayInfoVO> daysMap) throws NullPointerException {
+		Collection<DayInfoVO> values = daysMap.values();
+		for (DayInfoVO value : values) {
+		    if (value == null) {
+		    	throw new NullPointerException("Input Contains Null values");
+		    }
+		    }
 		DayInfoVO firstDayInfo = daysMap.get(1);
-		for (int i = 2; i <= daysMap.size(); i++) {
+		for (int i = 2; i <=7; i++) {
 			DayInfoVO dayInfo = daysMap.get(i);
 			if (dayInfo == null) {
 				continue;
@@ -43,27 +50,29 @@ public class ShiftService {
 
 	public boolean isValidShift(Map<Integer, DayInfoVO> daysMap)throws NullPointerException {
 		int currentDay = 1;
-		int lastDay = 7;
-		boolean isValid = true;
-		while (currentDay < lastDay) {
+		boolean isValid = false;
+		Collection<DayInfoVO> values = daysMap.values();
+		for (DayInfoVO value : values) {
+		    if (value == null) {
+		    	throw new NullPointerException("Input Contains Null values");
+		    }
+		    }
+		while (currentDay <=7) {
 			DayInfoVO currentDayInfo = daysMap.get(currentDay);
 			int nextDay = currentDay + 1;
-			while (nextDay <= lastDay && !daysMap.containsKey(nextDay)) {
-				nextDay++;
-			}
-			if (nextDay > lastDay) {
-				break;
-			}
 			DayInfoVO nextDayInfo = daysMap.get(nextDay);
 			if (currentDayInfo==null || nextDayInfo==null) {
-				throw new NullPointerException("Input cannot be null.");
+				isValid = true;
 			}
+			else {
 			Duration duration = Duration.between(currentDayInfo.getEndTimeInstant(), nextDayInfo.getStartTimeInstant());
 			if (duration.isNegative()) {
 				duration = duration.plusHours(24);
 			}
 			if (duration.toHours() < 8) {
 				isValid = false;
+				break;
+			}
 			}
 			currentDay = nextDay;
 		}
