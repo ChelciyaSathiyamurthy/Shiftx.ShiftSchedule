@@ -16,6 +16,16 @@ public class DayInfoVO {
 	long workingHours;
 	Boolean isValidShift;
 	String shiftType;
+	private int day;
+
+
+	public int getDay() {
+		return day;
+	}
+
+	public void setDay(int day) {
+		this.day = day;
+	}
 
 	public DayInfoVO(Instant startTime2, Instant endTime2) {
 		this.startTimeInstant = startTime2;
