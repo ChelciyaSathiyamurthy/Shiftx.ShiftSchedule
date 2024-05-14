@@ -8,104 +8,100 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ShiftService {
 
-	public void processShiftPattern(String fullPattern) throws ShiftServiceException {
+	public List<DayInfoVO> processShiftPattern(String fullPattern) throws ShiftServiceException {
 		String[] splitedDaywisePattern = fullPattern.split(",");
 		Map<Integer, DayInfoVO> daysMap = new HashMap<>();
-		Shift shift=new Shift();
-		shift.setDays(new ArrayList<DayInfoVO>());
+		Shift shift = new Shift();
+		shift.setDays(new ArrayList<>());
 		for (int i = 0; i < splitedDaywisePattern.length; i++) {
 			if (!splitedDaywisePattern[i].equalsIgnoreCase("OFF")) {
 				DayInfoVO dayInfoVO = processDayPattern(splitedDaywisePattern[i]);
 				daysMap.put(i + 1, dayInfoVO);
-				dayInfoVO.setDay(i+1);
+				dayInfoVO.setDay(i);
 				shift.getDays().add(dayInfoVO);
-				System.out.println(dayInfoVO.getDay());
-
-				shift.setShiftType(findShiftType(shift.days));
-				
 
 			}
-			
+			else {
+				shift.getDays().add(null);			}
+
 		}
-		if(!isValidShift(shift.days)) {
+
+		shift.setShiftType(findShiftType(shift.getDays()));
+		System.out.println(shift.getShiftType());
+		if (!isValidShift(shift.getDays())) {
 			throw new ShiftServiceException("Duration between two shifts not meeting the norms");
 		}
+		return shift.getDays();
 
 	}
+
+//	public List<DayInfoVO> addNullForOffDays(List<DayInfoVO> daysList) {
+//		for (int i = 0; i < daysList.size(); i++) {
+//			DayInfoVO dayInfo = daysList.get(i);
+//			if (dayInfo.getDay() == i) {
+//				continue;
+//			} else {
+//				daysList.add(i, null);
+//			}
+//
+//		}
+//		return daysList;
+//	}
 
 	public String findShiftType(List<DayInfoVO> daysList) throws NullPointerException {
-	    for (DayInfoVO value : daysList) {
-	        if (value == null) {
-	            throw new NullPointerException("Input contains null values");
-	        }
-	    }
-	 
-
-	    DayInfoVO firstDayInfo = daysList.get(0);
-	    for (int i = 1; i < daysList.size(); i++) { 
-	        DayInfoVO dayInfo = daysList.get(i);
-	        if (dayInfo == null) {
-	            continue;
-	        }
-	        if (!dayInfo.getStartTimeInstant().equals(firstDayInfo.getStartTimeInstant())
-	                || !dayInfo.getEndTimeInstant().equals(firstDayInfo.getEndTimeInstant())) {
-	            return "Variable Type";
-	        }
-	    }
-	    return "Regular Type";
+		System.out.println();
+		DayInfoVO firstDayInfo = daysList.get(0);
+		for (int i = 1; i <= 6; i++) {
+			DayInfoVO dayInfo = daysList.get(i);
+			if (dayInfo == null) {
+				continue;
+			}
+			if (!dayInfo.getStartTimeInstant().equals(firstDayInfo.getStartTimeInstant())
+					|| !dayInfo.getEndTimeInstant().equals(firstDayInfo.getEndTimeInstant())) {
+				return "Variable Type";
+			}
+		}
+		return "Regular Type";
 	}
 
-
 	public boolean isValidShift(List<DayInfoVO> daysList) throws NullPointerException {
-	    boolean isValid = false;
-	    for (DayInfoVO value : daysList) {
-	        if (value == null) {
-	            throw new NullPointerException("Input contains null values");
-	        }
-	    }
+		int currentDay = 0;
+		boolean isValid = false;
 
-	    int currentDay = 1;
-	    int listIndex = 0;
-	    while (currentDay <= 7) {
-	        DayInfoVO currentDayInfo = null;
-	        DayInfoVO nextDayInfo = null;
+		while (currentDay <= 6) {
+			DayInfoVO currentDayInfo = daysList.get(currentDay);
 
-	        if (listIndex < daysList.size() && daysList.get(listIndex).getDay() == currentDay) {
-	            currentDayInfo = daysList.get(listIndex);
-	            listIndex++;
-	        }
+			int nextDay = currentDay + 1;
+			if (currentDay == 6) {
+				nextDay = 0;
+			}
+			DayInfoVO nextDayInfo = daysList.get(nextDay);
+			if (currentDayInfo == null || nextDayInfo == null) {
+				isValid = true;
+			} else {
+				Duration duration = Duration.between(currentDayInfo.getEndTimeInstant(),
+						nextDayInfo.getStartTimeInstant());
+				if (duration.isNegative()) {
+					duration = duration.plusHours(24);
+				}
+				if (duration.toHours() < 8) {
+					isValid = false;
+					break;
+				}
+			}
+			if (nextDay == 0) {
+				break;
+			}
+			currentDay = nextDay;
+		}
 
-	        int nextDay = currentDay + 1;
-	        if (listIndex < daysList.size() && daysList.get(listIndex).getDay() == nextDay) {
-	            nextDayInfo = daysList.get(listIndex);
-	            listIndex++;
-	        }
-
-	        if (currentDayInfo == null || nextDayInfo == null) {
-	            isValid = true;
-	        } else {
-	            Duration duration = Duration.between(currentDayInfo.getEndTimeInstant(), nextDayInfo.getStartTimeInstant());
-	            if (duration.isNegative()) {
-	                duration = duration.plusHours(24);
-	            }
-	            if (duration.toHours() >= 8) {
-	                isValid = true;
-	            } else {
-	                isValid = false;
-	                break;
-	            }
-	        }
-	        currentDay++;
-	    }
-
-	    return isValid;
+		return isValid;
 	}
 
 	public DayInfoVO processDayPattern(String splitedDaywisePattern) throws ShiftServiceException {
@@ -117,7 +113,6 @@ public class ShiftService {
 		dayInfoVO.setEndTimeInstant(endTimeInstant);
 		dayInfoVO.setBreakTimeInstant(breakTimeInstant);
 		dayInfoVO.setWorkingHours(minutesBetween(dayInfoVO.startTimeInstant, dayInfoVO.endTimeInstant));
-
 		return dayInfoVO;
 	}
 

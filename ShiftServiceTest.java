@@ -1,12 +1,12 @@
 package com.shiftx.shiftpatterns;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -81,45 +81,59 @@ class ShiftServiceTest {
 
 	@Test
 	void testFindShiftType() {
-		Map<Integer, DayInfoVO> daysMap = new HashMap<>();
+		List<DayInfoVO> daysList = new ArrayList<>();
 		ShiftService service = new ShiftService();
 		Instant startTime = Instant.parse("2024-05-10T09:00:00Z");
 		Instant endTime = Instant.parse("2024-05-10T17:30:00Z");
-		for (int i = 1; i <= 7; i++) {
-			if (i==3&&i==5) {continue;}
+		for (int i = 0; i <= 6; i++) {
+
 			DayInfoVO dayInfoVO = new DayInfoVO();
 			dayInfoVO.setStartTimeInstant(startTime);
 			dayInfoVO.setEndTimeInstant(endTime);
-			daysMap.put(i, dayInfoVO);
+			daysList.add(i, dayInfoVO);
+			if (i == 2 || i == 4) {
+				daysList.add(i, null);
+			}
 		}
-		assertEquals("Regular Type", service.findShiftType(daysMap));
-	}
-
-	@Test
-	void testFindShiftType01() {
-		Map<Integer, DayInfoVO> daysMap = new HashMap<>();
-		ShiftService service = new ShiftService();
-		for (int i = 1; i <= 7; i++) {
-			daysMap.put(i, null);
-		}
-		try {
-			service.findShiftType(daysMap);
-		} catch (NullPointerException e) {
-			assertEquals("Input Contains Null values", e.getMessage());
-		}
+		assertEquals("Regular Type", service.findShiftType(daysList));
 	}
 
 	@Test
 	void testFindShiftType02() {
-		Map<Integer, DayInfoVO> daysMap = new HashMap<>();
+		List<DayInfoVO> daysList = new ArrayList<>();
 		ShiftService service = new ShiftService();
 		Instant startTime = Instant.parse("2024-05-10T09:00:00Z");
 		Instant endTime = Instant.parse("2024-05-10T17:30:00Z");
-		daysMap.put(1, new DayInfoVO(startTime, endTime));
-		daysMap.put(2, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.plus(Duration.ofHours(2))));
-		daysMap.put(4, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(2))));
-		daysMap.put(6, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(1))));
-		daysMap.put(7, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(1))));
-		assertEquals("Variable Type", service.findShiftType(daysMap));
+		daysList.add(0, new DayInfoVO(startTime, endTime));
+		daysList.add(1, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.plus(Duration.ofHours(2))));
+		daysList.add(2, null);
+		daysList.add(3, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(2))));
+		daysList.add(4, null);
+		daysList.add(5, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(1))));
+		daysList.add(6, new DayInfoVO(startTime.plus(Duration.ofHours(1)), endTime.minus(Duration.ofHours(1))));
+		assertEquals("Variable Type", service.findShiftType(daysList));
 	}
+
+	@Test
+	void testIsValidShift() throws ShiftServiceException {
+		String input = "0900-1730-B30,0900-1730-B30,OFF,0900-1730-B30,OFF,0900-1730-B30,0900-1730-B30";
+		ShiftService service = new ShiftService();
+
+		List<DayInfoVO> daysList = service.processShiftPattern(input);
+		assertEquals(true, service.isValidShift(daysList));
+
+	}
+
+	@Test
+	void testIsValidShift01() {
+		String input = "0900-1730-B30,0900-1730-B30,OFF,0900-1730-B30,OFF,0900-0030-B30,0200-1730-B30";
+		ShiftService service = new ShiftService();
+		try {
+			service.processShiftPattern(input);
+		} catch (ShiftServiceException e) {
+			assertEquals("Duration between two shifts not meeting the norms", e.getMessage());
+		}
+
+	}
+
 }
